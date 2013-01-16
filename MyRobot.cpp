@@ -74,11 +74,11 @@ public:
 			
 			if(switch1->Get() == 1)
 			{
-				motor3->Set(1);
+				motor3->Set(0);
 			}
 			else
 			{
-				motor3->Set(0);
+				motor3->Set(1);
 			}
 						
          Wait(0.005);
