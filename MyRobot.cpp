@@ -9,7 +9,7 @@
 class RobotDemo : public SimpleRobot
 {
 	RobotDrive myRobot; // robot drive system
-	Joystick rightstick; // Right joystick
+	Joystick rightstick ; // Right joystick
 	Joystick leftstick; //Left Stick
 	Jaguar *motor1;
 	Jaguar *motor2;
@@ -17,6 +17,10 @@ class RobotDemo : public SimpleRobot
 	Jaguar *motor3;
 	
 	DigitalInput *switch1;
+	DigitalInput *switch2;
+	Compressor *c;
+	Solenoid *s[8];
+
 	
 public:
 	RobotDemo(void):
@@ -28,10 +32,13 @@ public:
 		myRobot.SetExpiration(0.1);
 		motor1 = new Jaguar(3);
 		motor2 = new Jaguar(4);
-		
 		motor3 = new Jaguar(5);
-		
 		switch1 = new DigitalInput(1);
+		switch2 = new DigitalInput(2);
+		c = new Compressor(3, 1);
+		c->Start();
+		
+		
 	}
 
 	/**
@@ -41,18 +48,22 @@ public:
 	{
 		myRobot.SetSafetyEnabled(false);
 		myRobot.Drive(-0.5, 0.0); 	// drive forwards half speed
-		Wait(2.0); 				//    for 2 seconds
+		Wait(2.000);		
+			
+		
 		myRobot.Drive(0.0, 0.0); 	// stop robot
+		
 	}
 
 	/**
-	 * Runs the motors with arcade steering. 
+	 * Runs the motors with Tank steering. 
 	 */
 	void OperatorControl(void)
 	{
 		myRobot.SetSafetyEnabled(true);
 		while (IsOperatorControl())
 		{
+			
 			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
 			if(leftstick.GetTrigger())
 			{
@@ -61,7 +72,7 @@ public:
 			else
 			{
 				motor1->Set(0);
-			};
+			}
 			
 			if(rightstick.GetTrigger())
 			{
@@ -71,22 +82,37 @@ public:
 			{
 				motor2->Set(0);
 			}
-			
-			if(switch1->Get() == 1)
+			if(leftstick.GetTop())
 			{
-				motor3->Set(0);
+				 if(switch2->Get() == 1)
+				 {
+					motor3->Set(-1); 
+				 }
+				 else
+				 {
+					motor3->Set(1);	 
+				 }
+				 
+				 while(leftstick.GetTop())
+				 { 
+					 if (switch1->Get() == 1)
+					 {
+						 motor3->Set(1);
+					 }
+					 else if (switch2->Get() == 1)
+					 {
+						 motor3->Set(-1);
+					 }
+				 }
 			}
-			else
-			{
-				motor3->Set(1);
-			}
+		
+		}	
 						
          Wait(0.005);
 			
 			
-		  
-		}	
-	}
+	}	
+	
 	
 	/**
 	 * Runs during test mode
