@@ -19,7 +19,12 @@ class RobotDemo : public SimpleRobot
 	DigitalInput *switch1;
 	DigitalInput *switch2;
 	Compressor *c;
-	Solenoid *s[8];
+	
+	
+#define NUM_S 2
+	Solenoid *s[NUM_S];
+	
+	float currentDir;
 
 	
 public:
@@ -38,7 +43,13 @@ public:
 		c = new Compressor(3, 1);
 		c->Start();
 		
+		for(int i = 0; i < NUM_S; ++i)
+		{
+			s[i] = new Solenoid(i + 1);
+			s[i]->Set(false);
+		}
 		
+		currentDir = 1;
 	}
 
 	/**
@@ -60,6 +71,9 @@ public:
 	 */
 	void OperatorControl(void)
 	{
+		
+		
+		
 		myRobot.SetSafetyEnabled(true);
 		while (IsOperatorControl())
 		{
@@ -82,28 +96,44 @@ public:
 			{
 				motor2->Set(0);
 			}
-			if(leftstick.GetTop())
+			if(leftstick.GetRawButton(4))
 			{
-				 if(switch2->Get() == 1)
+				 if(switch2->Get() == 0)
 				 {
-					motor3->Set(-1); 
-				 }
-				 else
-				 {
-					motor3->Set(1);	 
+					 currentDir = -1;
 				 }
 				 
-				 while(leftstick.GetTop())
-				 { 
-					 if (switch1->Get() == 1)
-					 {
-						 motor3->Set(1);
-					 }
-					 else if (switch2->Get() == 1)
-					 {
-						 motor3->Set(-1);
-					 }
+				 if(switch1->Get() == 0)
+				 {
+					 currentDir = 1;
 				 }
+				 
+				 motor3->Set(currentDir);
+			}
+			else
+			{
+				currentDir = 1;
+				motor3->Set(0);
+			}
+			
+			//Solenoid in
+			if(leftstick.GetRawButton(2))
+			{
+				s[0]->Set(true);
+			}
+			else
+			{
+				s[0]->Set(false);
+			}
+			
+			//Solenoid out
+			if(leftstick.GetRawButton(3))
+			{
+				s[1]->Set(true);
+			}
+			else
+			{
+				s[1]->Set(false);
 			}
 		
 		}	
