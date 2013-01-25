@@ -25,7 +25,13 @@ class RobotDemo : public SimpleRobot
 	Solenoid *s[NUM_S];
 	
 	float currentDir;
+	
+#define SECONDS_JAM_SENSOR 3
 
+	float currentJamTimer;
+	bool checkJam;
+	
+	time_t begin, end;
 	
 public:
 	RobotDemo(void):
@@ -35,17 +41,27 @@ public:
 		
 	{
 		myRobot.SetExpiration(0.1);
-		motor1 = new Jaguar(3);
-		motor2 = new Jaguar(4);
-		motor3 = new Jaguar(5);
+		
+		//Register 3 extra motors (in addition to the two drive motors)
+		motor1 = new Jaguar(3); //PWM Channel 3
+		motor2 = new Jaguar(4); //PWM Channel 4
+		motor3 = new Jaguar(5); //PWM Channel 5
+		
+		//Two Bumber switches
 		switch1 = new DigitalInput(1);
 		switch2 = new DigitalInput(2);
+		
+		//IR Sensor
 		sensor1 = new DigitalInput(4);
+		
+		//Encoder
 		encoder1 = new Encoder(5, 6, true);
+		
+		//Compressor
 		c = new Compressor(3, 1);
-	
 		c->Start();
 		
+		//Call constructor for solenoid objects
 		for(int i = 0; i < NUM_S; ++i)
 		{
 			s[i] = new Solenoid(i + 1);
@@ -53,6 +69,9 @@ public:
 		}
 		
 		currentDir = 1;
+		
+		currentJamTimer = SECONDS_JAM_SENSOR;
+		checkJam = false;
 		
 		SmartDashboard::init();
 	}
@@ -75,16 +94,23 @@ public:
 	/**
 	 * Runs the motors with Tank steering. 
 	 */
+	
+	
 	void OperatorControl(void)
 	{
 		
-		
+		time(&begin);
 		
 		myRobot.SetSafetyEnabled(true);
 		while (IsOperatorControl())
 		{
+			time(&end);
+			float dt = difftime(end, begin);
+			time(&begin);
 			
 			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
+			
+			//Control motor1 with left trigger
 			if(leftstick.GetTrigger())
 			{
 				motor1->Set(1);
@@ -94,6 +120,7 @@ public:
 				motor1->Set(0);
 			}
 			
+			//Control motor2 with right trigger
 			if(rightstick.GetTrigger())
 			{
 				motor2->Set(1);
@@ -102,6 +129,8 @@ public:
 			{
 				motor2->Set(0);
 			}
+			
+			//Bumper switch logic
 			if(leftstick.GetRawButton(4))
 			{
 				 if(switch2->Get() == 0)
@@ -136,6 +165,11 @@ public:
 			if(leftstick.GetRawButton(3))
 			{
 				s[1]->Set(true);
+				
+				//Start checking for a jam
+				//This starts a countdown before the jam sensor is checked
+				checkJam = true;
+				currentJamTimer = SECONDS_JAM_SENSOR;
 			}
 			else
 			{
@@ -143,13 +177,33 @@ public:
 			}
 			
 			
-			if(sensor1->Get() == 0)
+
+			//Check to see if there is a jam
+			if(checkJam)
 			{
-				SmartDashboard::PutBoolean("Sensor", true);
+				//Countdown
+				currentJamTimer -= dt;
+				
+				//If countdown is complete
+				if(currentJamTimer < 0)
+				{
+					//If the frisbee is still there
+					if(sensor1->Get() == 1)
+					{
+						//Show red light
+						SmartDashboard::PutBoolean("Frisbee Loader Jam", false);
+					}
+					else
+					{
+						//If frisbee is not there, it was successfully pushed, and there was no jam
+						checkJam = false;
+					}
+				}
 			}
 			else
 			{
-				SmartDashboard::PutBoolean("Sensor", false);
+				//If you aren't checking for a jam, show a green light
+				SmartDashboard::PutBoolean("Frisbee Loader Jam", true);
 			}
 			
 		}	
