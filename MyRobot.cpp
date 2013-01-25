@@ -17,6 +17,7 @@ class RobotDemo : public SimpleRobot
 	DigitalInput *switch1;
 	DigitalInput *switch2;
 	DigitalInput *sensor1;
+	Encoder *encoder1;
 	Compressor *c;
 	
 	
@@ -40,7 +41,9 @@ public:
 		switch1 = new DigitalInput(1);
 		switch2 = new DigitalInput(2);
 		sensor1 = new DigitalInput(4);
+		encoder1 = new Encoder(5, 6, true);
 		c = new Compressor(3, 1);
+	
 		c->Start();
 		
 		for(int i = 0; i < NUM_S; ++i)
@@ -148,7 +151,7 @@ public:
 			{
 				SmartDashboard::PutBoolean("Sensor", false);
 			}
-		
+			
 		}	
 		
 
