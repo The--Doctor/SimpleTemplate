@@ -12,12 +12,11 @@ class RobotDemo : public SimpleRobot
 	Joystick rightstick ; // Right joystick
 	Joystick leftstick; //Left Stick
 	Jaguar *motor1;
-	Jaguar *motor2;
-	
+	Jaguar *motor2;	
 	Jaguar *motor3;
-	
 	DigitalInput *switch1;
 	DigitalInput *switch2;
+	DigitalInput *sensor1;
 	Compressor *c;
 	
 	
@@ -40,6 +39,7 @@ public:
 		motor3 = new Jaguar(5);
 		switch1 = new DigitalInput(1);
 		switch2 = new DigitalInput(2);
+		sensor1 = new DigitalInput(4);
 		c = new Compressor(3, 1);
 		c->Start();
 		
@@ -50,6 +50,8 @@ public:
 		}
 		
 		currentDir = 1;
+		
+		SmartDashboard::init();
 	}
 
 	/**
@@ -63,6 +65,7 @@ public:
 			
 		
 		myRobot.Drive(0.0, 0.0); 	// stop robot
+		
 		
 	}
 
@@ -135,8 +138,21 @@ public:
 			{
 				s[1]->Set(false);
 			}
+			
+			
+			if(sensor1->Get() == 0)
+			{
+				SmartDashboard::PutBoolean("Sensor", true);
+			}
+			else
+			{
+				SmartDashboard::PutBoolean("Sensor", false);
+			}
 		
 		}	
+		
+
+		
 						
          Wait(0.005);
 			
