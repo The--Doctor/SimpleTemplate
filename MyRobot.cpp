@@ -181,7 +181,7 @@ public:
 				s[1]->Set(false);
 			}
 			
-			
+			SmartDashboard::PutNumber("Jam Timer", currentJamTimer);
 
 			//Check to see if there is a jam
 			if(checkJam)
