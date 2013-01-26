@@ -55,7 +55,8 @@ public:
 		sensor1 = new DigitalInput(4);
 		
 		//Encoder
-		encoder1 = new Encoder(5, 6, true);
+		encoder1 = new Encoder(5, 6, true); //A channel - PWM 5, B Channel - PWM 6
+		encoder1->Start(); //Start counting
 		
 		//Compressor
 		c = new Compressor(3, 1);
@@ -209,7 +210,7 @@ public:
 		}	
 		
 
-		
+		SmartDashboard::PutNumber("Shooting Wheel Speed (ticks/sec)", encoder1->GetRate());
 						
          Wait(0.005);
 			
