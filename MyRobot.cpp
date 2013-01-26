@@ -48,18 +48,19 @@ public:
 		motor3 = new Jaguar(5); //PWM Channel 5
 		
 		//Two Bumber switches
-		switch1 = new DigitalInput(1);
-		switch2 = new DigitalInput(2);
+		switch1 = new DigitalInput(1); //Digital input port 1
+		switch2 = new DigitalInput(2); //Digital input port 2
 		
-		//IR Sensor
+		//IR Sensor, Digital input port 4
 		sensor1 = new DigitalInput(4);
 		
 		//Encoder
-		encoder1 = new Encoder(5, 6, true); //A channel - PWM 5, B Channel - PWM 6
+		encoder1 = new Encoder(5, 6, true); //A channel - Digital Input 5, B Channel - Digital Input 6
 		encoder1->Start(); //Start counting
 		
 		//Compressor
-		c = new Compressor(3, 1);
+		c = new Compressor(3, 1); //Pressure switch connected to Digital Input 3
+		//Spike relay conencted to port 1
 		c->Start();
 		
 		//Call constructor for solenoid objects
@@ -69,11 +70,14 @@ public:
 			s[i]->Set(false);
 		}
 		
+		//Initialize the current direction value, used for the bumper switch logic
 		currentDir = 1;
 		
+		//Set up jam timer, used for counting down
 		currentJamTimer = SECONDS_JAM_SENSOR;
 		checkJam = false;
 		
+		//Initialized smart dashboard
 		SmartDashboard::init();
 	}
 
@@ -207,12 +211,15 @@ public:
 				SmartDashboard::PutBoolean("Frisbee Loader Jam", true);
 			}
 			
+			//Also send raw IR sensor data to dashboard
+			SmartDashboard::PutBoolean("Raw IR Sensor", (sensor1->Get() == 1));
+			
 		}	
 		
-
+		//Push encoder rate to dashboard
 		SmartDashboard::PutNumber("Shooting Wheel Speed (ticks/sec)", encoder1->GetRate());
 						
-         Wait(0.005);
+        Wait(0.005);
 			
 			
 	}	
