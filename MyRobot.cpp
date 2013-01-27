@@ -115,26 +115,33 @@ public:
 			
 			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
 			
-			//Control motor1 with left trigger
-			if(leftstick.GetTrigger())
-			{
-				motor1->Set(1);
-			}
-			else
+			if(leftstick.GetTrigger() && rightstick.GetTrigger())
 			{
 				motor1->Set(0);
 			}
-			
-			//Control motor2 with right trigger
-			if(rightstick.GetTrigger())
-			{
-				motor2->Set(1);
-			}
 			else
 			{
-				motor2->Set(0);
-			}
 			
+				//Control motor1 with left trigger
+				if(leftstick.GetTrigger())
+				{
+					motor1->Set(1);
+				}
+				else
+				{
+					//invert motor1 with right trigger
+					if(rightstick.GetTrigger())
+					{
+						motor1->Set(-1);
+					}
+					else
+					{
+						motor1->Set(0);
+					}
+				}
+			}
+	
+						
 			//Bumper switch logic
 			if(leftstick.GetRawButton(4))
 			{
@@ -228,10 +235,11 @@ public:
 	/**
 	 * Runs during test mode
 	 */
-	void Test() {
-
+	void Test() 
+	{
+		
 	}
-};
+  };
 
 START_ROBOT_CLASS(RobotDemo);
 
