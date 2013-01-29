@@ -18,6 +18,7 @@ class RobotDemo : public SimpleRobot
 	DigitalInput *switch2;
 	DigitalInput *sensor1;
 	Encoder *encoder1;
+	Encoder *encoder2;
 	Compressor *c;
 	
 	
@@ -54,9 +55,12 @@ public:
 		//IR Sensor, Digital input port 4
 		sensor1 = new DigitalInput(4);
 		
-		//Encoder
+		//Encoder 1
 		encoder1 = new Encoder(5, 6, true); //A channel - Digital Input 5, B Channel - Digital Input 6
 		encoder1->Start(); //Start counting
+		encoder2 = new Encoder(7, 8, true);
+		encoder2->Start(); // Start counting
+		
 		
 		//Compressor
 		c = new Compressor(3, 1); //Pressure switch connected to Digital Input 3
@@ -88,7 +92,7 @@ public:
 	{
 		myRobot.SetSafetyEnabled(false);
 		myRobot.Drive(-0.5, 0.0); 	// drive forwards half speed
-		Wait(2.000);		
+		Wait(5.000);		
 			
 		
 		myRobot.Drive(0.0, 0.0); 	// stop robot
@@ -219,15 +223,20 @@ public:
 			}
 			
 			//Also send raw IR sensor data to dashboard
-			SmartDashboard::PutBoolean("Raw IR Sensor", (sensor1->Get() == 1));
+			if(sensor1->Get() == 1)
+			{
+				SmartDashboard::PutBoolean("Raw IR Sensor", true);
+			}
+			else
+			{
+				SmartDashboard::PutBoolean("Raw IR Sensor", false);
+			}
 			
+			//Push encoder rate to dashboard
+			SmartDashboard::PutNumber("Shooting Wheel Speed (ticks/sec)", encoder1->GetRate());
+							
+			Wait(0.005);
 		}	
-		
-		//Push encoder rate to dashboard
-		SmartDashboard::PutNumber("Shooting Wheel Speed (ticks/sec)", encoder1->GetRate());
-						
-        Wait(0.005);
-			
 			
 	}	
 	
