@@ -19,6 +19,7 @@ class RobotDemo : public SimpleRobot
 	DigitalInput *sensor1;
 	Encoder *encoder1;
 	Encoder *encoder2;
+	Encoder *encoder3;
 	Compressor *c;
 	
 	
@@ -58,8 +59,10 @@ public:
 		//Encoder 1
 		encoder1 = new Encoder(5, 6, true); //A channel - Digital Input 5, B Channel - Digital Input 6
 		encoder1->Start(); //Start counting
-		encoder2 = new Encoder(7, 8, true);
+		encoder2 = new Encoder(7, 8, true); //A channel - Digital Input 7, B Channel - Digital Input 8
 		encoder2->Start(); // Start counting
+		encoder3 = new Encoder(9, 10, true); //A channel - Digital Input 9, B Channel - Digital Input 10
+		encoder3->Start(); // Start counting
 		
 		
 		//Compressor
@@ -232,8 +235,14 @@ public:
 				SmartDashboard::PutBoolean("Raw IR Sensor", false);
 			}
 			
-			//Push encoder rate to dashboard
-			SmartDashboard::PutNumber("Shooting Wheel Speed (ticks/sec)", encoder1->GetRate());
+			//Push encoder 1 rate to dashboard
+			SmartDashboard::PutNumber("Encoder 1 (ticks/sec)", encoder1->GetRate());
+			
+			//Push encoder 2 rate to dashboard
+			SmartDashboard::PutNumber("Encoder 2 (ticks/sec)", encoder2->GetRate());
+			
+			//Push encoder 3 rate to dashboard
+			SmartDashboard::PutNumber("Encoder 3 (ticks/sec)", encoder3->GetRate());
 							
 			Wait(0.005);
 		}	
