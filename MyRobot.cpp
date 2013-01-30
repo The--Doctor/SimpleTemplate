@@ -29,6 +29,12 @@ class RobotDemo : public SimpleRobot
 	float currentDir;
 	
 #define SECONDS_JAM_SENSOR 3
+	
+#define CPR 360
+	
+#define NUM_SPEEDS 3	
+	int speedIndex;
+#define USING_ENCODER
 
 	float currentJamTimer;
 	bool checkJam;
@@ -86,6 +92,10 @@ public:
 		
 		//Initialized smart dashboard
 		SmartDashboard::init();
+		
+		//Start at speed index 0
+		speedIndex = 0;
+		
 	}
 
 	/**
@@ -110,6 +120,12 @@ public:
 	
 	void OperatorControl(void)
 	{
+		float SPEEDS[NUM_SPEEDS] = {0.0f, 0.5f, 1.0f};
+		
+		bool leftbutton5 = false;
+		bool rightbutton5 = false;
+		
+		float currentShooterSpeed = 0.0f;
 		
 		time(&begin);
 		
@@ -120,8 +136,26 @@ public:
 			float dt = difftime(end, begin);
 			time(&begin);
 			
+			//Switching speed indexes
+			//This fancy stuff is to make sure that the speed only switches when the button is first pressed
+			if(leftbutton5 == false && leftstick.GetRawButton(5) == true)
+			{
+				++speedIndex;
+				
+				if(speedIndex >= NUM_SPEEDS)
+				{
+					speedIndex = 0;
+				}
+			}
+			leftbutton5 = leftstick.GetRawButton(5);
+			
+			//Print information about joystick axes
+			SmartDashboard::PutNumber("Left Stick:", leftstick.GetY());
+			SmartDashboard::PutNumber("Right Stick:", rightstick.GetY());
+			
 			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
 			
+			//When both trigger ar pressed motor1 does not move
 			if(leftstick.GetTrigger() && rightstick.GetTrigger())
 			{
 				motor1->Set(0);
@@ -236,13 +270,59 @@ public:
 			}
 			
 			//Push encoder 1 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 1 (ticks/sec)", encoder1->GetRate());
+			SmartDashboard::PutNumber("Encoder 1 (revs/sec):", (encoder1->GetRate())/CPR  );
 			
 			//Push encoder 2 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 2 (ticks/sec)", encoder2->GetRate());
+			SmartDashboard::PutNumber("Encoder 2 (revs/sec):", (encoder2->GetRate())/CPR  );
 			
 			//Push encoder 3 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 3 (ticks/sec)", encoder3->GetRate());
+			SmartDashboard::PutNumber("Encoder 3 (revs/sec):", (encoder3->GetRate())/CPR  );
+			
+			
+			#ifdef USING_ENCODER
+				//Push expected shooter speed
+				SmartDashboard::PutNumber("Expected Shooter Speed (revs/sec):", (SPEEDS[speedIndex])/CPR  );
+				
+				if(rightbutton5 == false && rightstick.GetRawButton(5) == true)
+				{
+					//When button 5 on the right stick is first pressed, set the shooterspeed to 0.5,
+					//On a scale of -1.0 to 1.0
+					currentShooterSpeed = 0.5f;
+				}
+				rightbutton5 = rightstick.GetRawButton(5);
+				
+				if(rightstick.GetRawButton(5))
+				{
+					//Assume that encoder 3 is the encoder attached to the shooter
+					
+					//May need to have a buffer period before starting to adjust speed?
+					
+					//If the encoder's rate is less than the desired rev/sec, increase currentShooterSpeed
+					if((encoder3->GetRate())/CPR < SPEEDS[speedIndex])
+					{
+						currentShooterSpeed += 0.01f;
+					}
+					//If the encoder's rate is greated than the desired rev/sec, decrease currentShooterSpeed
+					if((encoder3->GetRate())/CPR > SPEEDS[speedIndex])
+					{
+						currentShooterSpeed -= 0.01f;
+					}
+					
+					//Send that value to the motor
+					motor2->Set(currentShooterSpeed);
+				}
+			#else
+				//Push expected shooter speed
+				SmartDashboard::PutNumber("Expected Shooter Speed (Joystick Axis):", SPEEDS[speedIndex]);
+				if( rightstick.GetRawButton(5) )
+				{
+					motor2->Set(SPEEDS[speedIndex]);
+				}
+				else
+				{
+					motor2->Set(0);
+				}
+			#endif
 							
 			Wait(0.005);
 		}	
