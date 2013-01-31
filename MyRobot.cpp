@@ -11,9 +11,9 @@ class RobotDemo : public SimpleRobot
 	RobotDrive myRobot; // robot drive system
 	Joystick rightstick ; // Right joystick
 	Joystick leftstick; //Left Stick
-	Victor *motor1;
-	Victor *motor2;	
-	Victor *motor3;
+	Jaguar *motor1;
+	Jaguar *motor2;	
+	Jaguar *motor3;
 	DigitalInput *switch1;
 	DigitalInput *switch2;
 	DigitalInput *sensor1;
@@ -51,9 +51,9 @@ public:
 		myRobot.SetExpiration(0.1);
 		
 		//Register 3 extra motors (in addition to the two drive motors)
-		motor1 = new Victor(3); //PWM Channel 3
-		motor2 = new Victor(4); //PWM Channel 4
-		motor3 = new Victor(5); //PWM Channel 5
+		motor1 = new Jaguar(3); //PWM Channel 3
+		motor2 = new Jaguar(4); //PWM Channel 4
+		motor3 = new Jaguar(5); //PWM Channel 5
 		
 		//Two Bumber switches
 		switch1 = new DigitalInput(1); //Digital input port 1
