@@ -36,6 +36,8 @@ class RobotDemo : public SimpleRobot
 	int speedIndex;
 #define USING_ENCODER
 
+#define CLIMB_SPEED 0.1f
+	
 	float currentJamTimer;
 	bool checkJam;
 	
@@ -166,14 +168,14 @@ public:
 				//Control motor1 with left trigger
 				if(leftstick.GetTrigger())
 				{
-					motor1->Set(1);
+					motor1->Set(0.3);
 				}
 				else
 				{
 					//invert motor1 with right trigger
 					if(rightstick.GetTrigger())
 					{
-						motor1->Set(-1);
+						motor1->Set(-0.3);
 					}
 					else
 					{
@@ -198,10 +200,31 @@ public:
 				 
 				 motor3->Set(currentDir);
 			}
+			
 			else
 			{
 				currentDir = 1;
 				motor3->Set(0);
+			}
+			
+			//Bumper switch 1 dashboard
+			if(switch1->Get() == 0)
+			{
+				SmartDashboard::PutBoolean("Bumper Switch 1 Raw:", true  );
+			}
+			else
+			{
+				SmartDashboard::PutBoolean("Bumper Switch 1 Raw:", false  );
+			}
+			
+			//Bumper switch 2 dashboard
+			if(switch2->Get() == 0)
+			{
+				SmartDashboard::PutBoolean("Bumper Switch 2 Raw:", true  );
+			}
+			else
+			{
+				SmartDashboard::PutBoolean("Bumper Switch 2 Raw:", false  );
 			}
 			
 			//Solenoid in
@@ -341,3 +364,4 @@ public:
 
 START_ROBOT_CLASS(RobotDemo);
 
+//EOF
