@@ -36,7 +36,7 @@ class RobotDemo : public SimpleRobot
 	int speedIndex;
 #define USING_ENCODER
 
-#define CLIMB_SPEED 0.1f
+#define CLIMB_SPEED 0.3
 	
 	float currentJamTimer;
 	bool checkJam;
@@ -127,6 +127,9 @@ public:
 		bool leftbutton5 = false;
 		bool rightbutton5 = false;
 		
+		bool ltrigger = false;
+		bool rtrigger = false;
+		
 		float currentShooterSpeed = 0.0f;
 		
 		time(&begin);
@@ -164,27 +167,44 @@ public:
 			}
 			else
 			{
-			
-				//Control motor1 with left trigger
-				if(leftstick.GetTrigger())
+				if(leftstick.GetTrigger() || rightstick.GetTrigger())
 				{
-					motor1->Set(0.3);
+					motor1->Set(currentDir * CLIMB_SPEED);
 				}
 				else
 				{
-					//invert motor1 with right trigger
-					if(rightstick.GetTrigger())
-					{
-						motor1->Set(-0.3);
-					}
-					else
-					{
-						motor1->Set(0);
-					}
+					motor1->Set(0);
+				}
+			
+				//When left trigger is first pressed
+				if(leftstick.GetTrigger() && ltrigger == false)
+				{
+					currentDir = -1;
+					ltrigger = true;
+				}
+				
+				//When right trigger is first pressed
+				if(rightstick.GetTrigger() && rtrigger == false)
+				{
+					currentDir = 1;
+					rtrigger = true;
+				}
+				
+				if(switch1->Get() == 0)
+				{
+					currentDir = -1;
+				}
+				if(switch2->Get() == 0)
+				{
+					currentDir = 1;
 				}
 			}
+			ltrigger = leftstick.GetTrigger();
+			rtrigger = rightstick.GetTrigger();
+			
+			SmartDashboard::PutNumber("Expected Arm Direction:", currentDir  );
 	
-						
+			/*
 			//Bumper switch logic
 			if(leftstick.GetRawButton(4))
 			{
@@ -206,6 +226,7 @@ public:
 				currentDir = 1;
 				motor3->Set(0);
 			}
+			*/
 			
 			//Bumper switch 1 dashboard
 			if(switch1->Get() == 0)
