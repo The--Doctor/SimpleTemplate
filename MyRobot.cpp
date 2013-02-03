@@ -14,6 +14,7 @@ class RobotDemo : public SimpleRobot
 	Jaguar *motor1;
 	Jaguar *motor2;	
 	Jaguar *motor3;
+	Jaguar *motor4;
 	DigitalInput *switch1;
 	DigitalInput *switch2;
 	DigitalInput *sensor1;
@@ -56,6 +57,7 @@ public:
 		motor1 = new Jaguar(3); //PWM Channel 3
 		motor2 = new Jaguar(4); //PWM Channel 4
 		motor3 = new Jaguar(5); //PWM Channel 5
+		motor4 = new Jaguar(6); //PWM Channel 6
 		
 		//Two Bumber switches
 		switch1 = new DigitalInput(1); //Digital input port 1
@@ -127,8 +129,8 @@ public:
 		bool leftbutton5 = false;
 		bool rightbutton5 = false;
 		
-		bool ltrigger = false;
-		bool rtrigger = false;
+		bool l4 = false;
+		bool r4 = false;
 		
 		float currentShooterSpeed = 0.0f;
 		
@@ -161,13 +163,13 @@ public:
 			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
 			
 			//When both trigger ar pressed motor1 does not move
-			if(leftstick.GetTrigger() && rightstick.GetTrigger())
+			if(leftstick.GetRawButton(4) && rightstick.GetRawButton(4))
 			{
 				motor1->Set(0);
 			}
 			else
 			{
-				if(leftstick.GetTrigger() || rightstick.GetTrigger())
+				if(leftstick.GetRawButton(4) || rightstick.GetRawButton(4) )
 				{
 					motor1->Set(currentDir * CLIMB_SPEED);
 				}
@@ -177,17 +179,17 @@ public:
 				}
 			
 				//When left trigger is first pressed
-				if(leftstick.GetTrigger() && ltrigger == false)
+				if(leftstick.GetRawButton(4) && l4 == false)
 				{
 					currentDir = -1;
-					ltrigger = true;
+					l4 = true;
 				}
 				
 				//When right trigger is first pressed
-				if(rightstick.GetTrigger() && rtrigger == false)
+				if(rightstick.GetRawButton(4) && r4 == false)
 				{
 					currentDir = 1;
-					rtrigger = true;
+					r4 = true;
 				}
 				
 				if(switch1->Get() == 0)
@@ -199,34 +201,20 @@ public:
 					currentDir = 1;
 				}
 			}
-			ltrigger = leftstick.GetTrigger();
-			rtrigger = rightstick.GetTrigger();
+			l4 = leftstick.GetRawButton(4);
+			r4 = rightstick.GetRawButton(4);
 			
-			SmartDashboard::PutNumber("Expected Arm Direction:", currentDir  );
-	
-			/*
-			//Bumper switch logic
-			if(leftstick.GetRawButton(4))
+			
+			if( leftstick.GetTrigger() )
 			{
-				 if(switch2->Get() == 0)
-				 {
-					 currentDir = -1;
-				 }
-				 
-				 if(switch1->Get() == 0)
-				 {
-					 currentDir = 1;
-				 }
-				 
-				 motor3->Set(currentDir);
+				motor3->Set(1);
 			}
-			
 			else
 			{
-				currentDir = 1;
 				motor3->Set(0);
 			}
-			*/
+			
+			SmartDashboard::PutNumber("Expected Arm Direction:", currentDir  );
 			
 			//Bumper switch 1 dashboard
 			if(switch1->Get() == 0)
@@ -314,18 +302,18 @@ public:
 			}
 			
 			//Push encoder 1 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 1 (revs/sec):", (encoder1->GetRate())/CPR  );
+			SmartDashboard::PutNumber("Encoder 1", encoder1->Get() );
 			
 			//Push encoder 2 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 2 (revs/sec):", (encoder2->GetRate())/CPR  );
+			SmartDashboard::PutNumber("Encoder 2", encoder2->GetRate()  );
 			
 			//Push encoder 3 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 3 (revs/sec):", (encoder3->GetRate())/CPR  );
+			SmartDashboard::PutNumber("Encoder 3", encoder3->GetRate()  );
 			
 			
 			#ifdef USING_ENCODER
 				//Push expected shooter speed
-				SmartDashboard::PutNumber("Expected Shooter Speed (revs/sec):", (SPEEDS[speedIndex])/CPR  );
+				SmartDashboard::PutNumber("Expected Shooter Speed", SPEEDS[speedIndex]  );
 				
 				if(rightbutton5 == false && rightstick.GetRawButton(5) == true)
 				{
@@ -357,7 +345,7 @@ public:
 				}
 			#else
 				//Push expected shooter speed
-				SmartDashboard::PutNumber("Expected Shooter Speed (Joystick Axis):", SPEEDS[speedIndex]);
+				SmartDashboard::PutNumber("Expected Shooter Speed", SPEEDS[speedIndex]);
 				if( rightstick.GetRawButton(5) )
 				{
 					motor2->Set(SPEEDS[speedIndex]);
