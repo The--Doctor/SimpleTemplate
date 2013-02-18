@@ -1,4 +1,7 @@
 #include "WPILib.h"
+#include "Vision/AxisCamera.h"
+#include "nivision.h"
+#include "math.h"
 
 /**
  * This is a demo program showing the use of the RobotBase class.
@@ -11,6 +14,9 @@ class RobotDemo : public SimpleRobot
 	RobotDrive myRobot; // robot drive system
 	Joystick rightstick ; // Right joystick
 	Joystick leftstick; //Left Stick
+	
+	Joystick gamepad;
+	
 	Jaguar *motor1;
 	Jaguar *motor2;	
 	Jaguar *motor3;
@@ -22,9 +28,10 @@ class RobotDemo : public SimpleRobot
 	Encoder *encoder2;
 	Encoder *encoder3;
 	Compressor *c;
+	Relay *camlight;
 	
 	
-#define NUM_S 2
+#define NUM_S 4
 	Solenoid *s[NUM_S];
 	
 	float currentDir;
@@ -35,7 +42,8 @@ class RobotDemo : public SimpleRobot
 	
 #define NUM_SPEEDS 3	
 	int speedIndex;
-#define USING_ENCODER
+	
+#define USING_ENCODER false
 
 #define CLIMB_SPEED 0.3
 	
@@ -43,12 +51,13 @@ class RobotDemo : public SimpleRobot
 	bool checkJam;
 	
 	time_t begin, end;
-	
+
 public:
 	RobotDemo(void):
 		myRobot(1, 2),	// these must be initialized in the same order
 		leftstick(1), // These must be declared above
-		rightstick(2) //tank drive
+		rightstick(2), //tank drive
+		gamepad(3)
 		
 	{
 		myRobot.SetExpiration(0.1);
@@ -74,11 +83,16 @@ public:
 		encoder3 = new Encoder(9, 10, true); //A channel - Digital Input 9, B Channel - Digital Input 10
 		encoder3->Start(); // Start counting
 		
+	
 		
 		//Compressor
 		c = new Compressor(3, 1); //Pressure switch connected to Digital Input 3
-		//Spike relay conencted to port 1
+		//Spike relay conencted to relay port 1
 		c->Start();
+		
+		//Spike Relay
+		camlight = new Relay(11);
+		camlight ->Set(Relay::kOn);
 		
 		//Call constructor for solenoid objects
 		for(int i = 0; i < NUM_S; ++i)
@@ -99,6 +113,7 @@ public:
 		
 		//Start at speed index 0
 		speedIndex = 0;
+
 		
 	}
 
@@ -107,13 +122,73 @@ public:
 	 */
 	void Autonomous(void)
 	{
+		//Initial speeds for left and right motors
+		double left = 0.5;
+		double right = 0.5;
+		double timer = 0.0;
+		//Whether or not to adjust right wheel
+		bool adjustRightWheel = true;
+		
 		myRobot.SetSafetyEnabled(false);
-		myRobot.Drive(-0.5, 0.0); 	// drive forwards half speed
-		Wait(5.000);		
+		while (IsAutonomous() && IsEnabled())
+		{
+			//Send command to motors
+			myRobot.Drive(left, right);
+			if(timer < 2)
+			{
+				//Get left and right motor speeds from encoder1 and encoder2 respectively
+				double leftRate = encoder1->GetRate();
+				double leftdistance = encoder1->GetDistance();
+				double rightRate = encoder2->GetRate();
+				double rightdistance = encoder2->GetDistance();
+				
+						
+				//Push encoder 1 rate/distance to dashboard
+				SmartDashboard::PutNumber("Encoder 1",  leftRate);
+				SmartDashboard::PutNumber("Encoder 1", leftdistance );
+				
+				//Push encoder 2 rate/distance to dashboard
+				SmartDashboard::PutNumber("Encoder 2", rightRate );
+				SmartDashboard::PutNumber("Encoder 2", rightdistance );
+				
+				//Increment to adjust by every cycle
+				double increment = 0.01;
+				
+				//The acceptable error, within which no more adjustment is required
+				double acceptableError = 0;
+				
+				//If you want to adjust the right wheel speed
+				if(adjustRightWheel)
+				{
+					//If the right wheel's speed is greater than the left wheel, plus some error margin
+					if(rightRate > leftRate + acceptableError)
+					{
+						//Add a small amount to the right wheel's speed
+						right -= increment;
+					}
+					
+					//If the right wheel's speed is less than the left wheel, minus some error margin
+					if(rightRate < leftRate - acceptableError)
+					{
+						//Subtract a small amount from the right wheel's speed
+						right += increment;
+					}
+				}
+			//Wait some time before recalculating
+			Wait(0.05);
+		
+			}
+			else
+			{
+				myRobot.Drive(0.0, 0.0);
+			}
+			
+			timer+=0.05;
+		}
 			
 		
-		myRobot.Drive(0.0, 0.0); 	// stop robot
 		
+		myRobot.Drive(0.0, 0.0);
 		
 	}
 
@@ -121,10 +196,15 @@ public:
 	 * Runs the motors with Tank steering. 
 	 */
 	
+#include "input.h"
 	
 	void OperatorControl(void)
 	{
-		float SPEEDS[NUM_SPEEDS] = {0.0f, 0.5f, 1.0f};
+		//Start out in arcade drive mode
+		SmartDashboard::PutBoolean("TankDrive", false);
+		
+		
+		float SPEEDS[NUM_SPEEDS] = {0.2f, 0.5f, 1.0f};
 		
 		bool leftbutton5 = false;
 		bool rightbutton5 = false;
@@ -139,13 +219,15 @@ public:
 		myRobot.SetSafetyEnabled(true);
 		while (IsOperatorControl())
 		{
+			
+			//Measure elapsed time
 			time(&end);
 			float dt = difftime(end, begin);
 			time(&begin);
-			
+
 			//Switching speed indexes
 			//This fancy stuff is to make sure that the speed only switches when the button is first pressed
-			if(leftbutton5 == false && leftstick.GetRawButton(5) == true)
+			if(leftbutton5 == false && SwitchSpeed() == true)
 			{
 				++speedIndex;
 				
@@ -154,22 +236,35 @@ public:
 					speedIndex = 0;
 				}
 			}
-			leftbutton5 = leftstick.GetRawButton(5);
+			leftbutton5 = SwitchSpeed();
+			
+			//Push expected shooter speed
+			//SmartDashboard::PutNumber("Expected Shooter Speed", SPEEDS[speedIndex] - gamepad.GetRawAxis(GAMEPAD_R_STICK_Y));
+			
+			SmartDashboard::PutNumber("Expected Shooter Speed", (-1.0*rightstick.GetThrottle() + 1 ) * 0.5f);
 			
 			//Print information about joystick axes
-			SmartDashboard::PutNumber("Left Stick:", leftstick.GetY());
-			SmartDashboard::PutNumber("Right Stick:", rightstick.GetY());
+			SmartDashboard::PutNumber("Left Stick:", leftstick.GetY()*50+50);
+			SmartDashboard::PutNumber("Right Stick:", rightstick.GetY()*50+50);
 			
-			myRobot.TankDrive(leftstick, rightstick); // drive with tank stlye uses both sticks
 			
-			//When both trigger ar pressed motor1 does not move
-			if(leftstick.GetRawButton(4) && rightstick.GetRawButton(4))
+			if(SmartDashboard::GetBoolean("TankDrive"))
+			{
+				myRobot.TankDrive( leftstick, rightstick ); // drive with tank stlye uses both sticks
+			}
+			else
+			{
+				myRobot.ArcadeDrive( leftstick.GetY() , leftstick.GetX() );
+			}
+			
+			//When both triggers are pressed motor1 does not move
+			if(ArmLeft() && ArmRight())
 			{
 				motor1->Set(0);
 			}
 			else
 			{
-				if(leftstick.GetRawButton(4) || rightstick.GetRawButton(4) )
+				if(ArmLeft() || ArmRight())
 				{
 					motor1->Set(currentDir * CLIMB_SPEED);
 				}
@@ -179,14 +274,14 @@ public:
 				}
 			
 				//When left trigger is first pressed
-				if(leftstick.GetRawButton(4) && l4 == false)
+				if(ArmLeft() && l4 == false)
 				{
 					currentDir = -1;
 					l4 = true;
 				}
 				
 				//When right trigger is first pressed
-				if(rightstick.GetRawButton(4) && r4 == false)
+				if(ArmRight() && r4 == false)
 				{
 					currentDir = 1;
 					r4 = true;
@@ -201,18 +296,8 @@ public:
 					currentDir = 1;
 				}
 			}
-			l4 = leftstick.GetRawButton(4);
-			r4 = rightstick.GetRawButton(4);
-			
-			
-			if( leftstick.GetTrigger() )
-			{
-				motor3->Set(1);
-			}
-			else
-			{
-				motor3->Set(0);
-			}
+			l4 = ArmLeft();
+			r4 = ArmRight();
 			
 			SmartDashboard::PutNumber("Expected Arm Direction:", currentDir  );
 			
@@ -237,7 +322,7 @@ public:
 			}
 			
 			//Solenoid in
-			if(leftstick.GetRawButton(2))
+			if( Solenoid1In() )
 			{
 				s[0]->Set(true);
 			}
@@ -247,7 +332,7 @@ public:
 			}
 			
 			//Solenoid out
-			if(leftstick.GetRawButton(3))
+			if( Solenoid1Out() )
 			{
 				s[1]->Set(true);
 				
@@ -259,6 +344,25 @@ public:
 			else
 			{
 				s[1]->Set(false);
+			}
+			
+			//Solenoid 2 in
+			if( Solenoid2In() )
+			{
+				s[2]->Set(true);
+			}
+			else
+			{
+				s[2]->Set(false);
+			}
+			//Solenoid 2 out
+			if( Solenoid2Out() )
+			{
+				s[3]->Set(true);
+			}
+			else
+			{
+				s[3]->Set(false);
 			}
 			
 			SmartDashboard::PutNumber("Jam Timer", currentJamTimer);
@@ -301,17 +405,10 @@ public:
 				SmartDashboard::PutBoolean("Raw IR Sensor", false);
 			}
 			
-			//Push encoder 1 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 1", encoder1->Get() );
+			//SmartDashboard::PutNumber("Left Throttle", leftstick.GetThrottle());
 			
-			//Push encoder 2 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 2", encoder2->GetRate()  );
-			
-			//Push encoder 3 rate to dashboard
-			SmartDashboard::PutNumber("Encoder 3", encoder3->GetRate()  );
-			
-			
-			#ifdef USING_ENCODER
+			if(USING_ENCODER)
+			{
 				//Push expected shooter speed
 				SmartDashboard::PutNumber("Expected Shooter Speed", SPEEDS[speedIndex]  );
 				
@@ -343,18 +440,20 @@ public:
 					//Send that value to the motor
 					motor2->Set(currentShooterSpeed);
 				}
-			#else
-				//Push expected shooter speed
-				SmartDashboard::PutNumber("Expected Shooter Speed", SPEEDS[speedIndex]);
-				if( rightstick.GetRawButton(5) )
+			}
+			else
+			{
+				
+				
+				if( ShooterControl() )
 				{
-					motor2->Set(SPEEDS[speedIndex]);
+					motor2->Set( (-1.0*rightstick.GetThrottle() + 1 ) * 0.5f );
 				}
 				else
 				{
 					motor2->Set(0);
 				}
-			#endif
+			}
 							
 			Wait(0.005);
 		}	
